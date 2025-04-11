@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="">
+        <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+        <meta name="generator" content="Jekyll v3.8.5">
+        <title>CoNLL-U Quick Search</title>
+        <link rel="canonical" href="https://getbootstrap.com/docs/4.3/examples/floating-labels/">
+        <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+        <!-- Bootstrap core CSS -->
+        <link href="static/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+        <style>
+            .bd-placeholder-img {
+                font-size: 1.125rem;
+                text-anchor: middle;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+
+            @media (min-width: 768px) {
+                .bd-placeholder-img-lg {
+                    font-size: 3.5rem;
+                }
+            }
+        </style>
+
+        <!-- Custom styles for this template -->
+        <link href="static/css/login.css" rel="stylesheet">
+    </head>
+    <body>
+        <form class="form-signin" action="/" method="POST" enctype="multipart/form-data">
+            <div class="text-center mb-4">
+                <a href="https://sites.google.com/icmc.usp.br/poetisa" target="_blank"><img class="mb-4" src="https://souelvis.dev/ui-verbobrasil/img/logos.png" alt=""></a>
+                <h1 class="h3 mb-3 font-weight-normal">CoNLL-U Quick Search</h1>
+                <p>Upload a <a href="https://universaldependencies.org/format.html" target="_blank">CoNLL-U file</a> and quickly find sentences using patterns from <a href="https://grew.fr/" target="_blank">Grew</a>.</p>
+                <p>The <a href="https://souelvis.dev/enhanced-graph-visualiser/visualise.html">visualization tool</a> enables fast comparison between syntax trees and enhanced graphs.<br>Click any sentence to visualize its annotation.</p>
+                <hr>
+                <a href="https://github.com/alvelvis/conllu-quick-search">GitHub@alvelvis</a> - <a href="https://grew.fr/" target="_blank">Grew</a> - <a href="https://github.com/icepoint666/shopping-more">template</a> - <a href="https://souelvis.dev/enhanced-graph-visualiser/visualise.html">visualization tool</a><br>
+            </div>
+            
+            <script>
+                document.querySelector('form').addEventListener('submit', function(event) {
+                    const fileInput = document.getElementById('conllu-file');
+                    const dropdown = document.getElementById('conllu-dropdown');
+                    if (!fileInput.value && !dropdown.value) {
+                        event.preventDefault();
+                        alert('Please upload a CoNLL-U file or select one from the dropdown.');
+                    }
+                });
+                    
+                function toggleDetails(element) {
+                    const detailsDiv = element.parentElement.querySelector('.result-details');
+                    if (detailsDiv) {
+                        if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                            detailsDiv.style.display = 'block';
+                            element.parentElement.style.backgroundColor = 'white';
+                            element.parentElement.style.padding = '20px';
+
+                            // Load iframe if not already loaded
+                            const iframe = element.parentElement.querySelector('iframe');
+                            if (iframe && !iframe.src) {
+                                iframe.src = iframe.getAttribute('data-src');
+                            }
+                        } else {
+                            detailsDiv.style.display = 'none';
+                            element.parentElement.style.backgroundColor = '';
+                            element.parentElement.style.padding = '';
+                        }
+                    }
+                }
+            </script>
+
+            <!-- CoNLL-U Selection Section -->
+            <div id="conllu-selection-section">
+                <h2 class="h4 mb-3 font-weight-normal">File Selection</h2>
+                <p>Uploaded files will be automatically erased after 2 days. Files with same name will be replaced.</p>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="conllu-file">Upload CoNLL-U File.</label>
+                        <input type="file" id="conllu-file" name="conllu_file" class="form-control-file" onclick="this.value = null; document.getElementById('conllu-dropdown').value = '';">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="conllu-dropdown">Or Select from Existing Files</label>
+                        <select id="conllu-dropdown" name="conllu_file_selection" class="form-control">
+                            <option value="" disabled {% if not selected_conllu %}selected{% endif %}>Select a file</option>
+                            {% for file in conllu_files %}
+                                <option value="{{ file }}" {% if file == selected_conllu %}selected{% endif %}>{{ file }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <hr>
+            </div>
+
+            <!-- Pattern Writing Section -->
+            <div id="pattern-writing-section">
+                <h2 class="h4 mb-3 font-weight-normal">Write a Grew Pattern</h2>
+                <div class="form-group">
+                    <label for="inputText">Pattern</label>
+                    <textarea id="inputText" name="pattern" class="form-control" rows="10" placeholder="Enter your pattern here" spellcheck="false" required>{{ pattern if pattern else "pattern{\n\t\n}\nwithout {  }" }}</textarea>
+                </div>
+            </div>
+
+            <button id="annotate" class="btn btn-lg btn-success btn-block" type="submit">Search (Ctrl+Enter)</button>
+
+            <!-- Results Section -->
+            {% if error %}
+            <hr>
+            <div id="error-section">
+                <h2 class="h4 mb-3 font-weight-normal text-danger">Error</h2>
+                <p>{{ error }}</p>
+            </div>
+            {% elif results %}
+            <hr>
+            <div id="results-section">
+                <h2 class="h4 mb-3 font-weight-normal">Results in {{ selected_conllu }} ({{ results|length }})</h2>
+                <div id="results-container">
+                    {% for result in results %}
+                        <div class="result-item mb-4">
+                            <p onclick="toggleDetails(this)" style="cursor:pointer;">{{ loop.index }}. {{ result["sent_id"] }} - {{ result["text"]|safe }}</p>
+                            <div class="result-details" style='display: none; font-family: monospace;'>
+                                {{ result["node_text"] }}
+                                <div style="max-width:100%; overflow-y: hidden; overflow-x: hidden;" id="visualiser">
+                                    <iframe id="visualiser-{{ loop.index }}" data-src="http://souelvis.dev/enhanced-graph-visualiser/visualise.html?focus=true&text={{result['encoded_conllu']}}" style="margin-left: -30px; border:none; width:999999px; height:200px;" onload="try { this.style.height = this.contentWindow.document.body.scrollHeight + 'px'; } catch (e) { console.warn('Cross-origin error occurred while resizing iframe.'); this.style.height = '200px'; }"></iframe>
+                                </div>
+                                <pre>{{ result["sentence"]["conllu"] }}</pre>
+                            </div>
+                        </div>
+                        <hr>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <hr>
+            <p class="mt-5 mb-3 text-muted text-center">&copy; 2025</p>
+
+        </form>
+    </body>
+    <script src="{{ url_for('static', filename='flask-bootstrap.js') }}"></script>
+</html>

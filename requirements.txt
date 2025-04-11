@@ -1,0 +1,4 @@
+regex
+gunicorn
+flask
+requests
