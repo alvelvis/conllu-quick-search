@@ -40,7 +40,7 @@ def home():
     conllu_file = ""
     error = ""
     pattern = ""
-    results = ""
+    results = []
     grep_output = ""
 
     if request.method == "POST":
@@ -73,7 +73,9 @@ def home():
                     ["grew", "grep", "-request", pattern_file_path, "-i", os.path.join(conllu_path, conllu_file)],
                     capture_output=True,
                     text=True,
-                    check=True
+                    check=True,
+                    encoding="utf-8",
+                    errors="replace"
                 )
                 grep_output = result.stdout
             except subprocess.CalledProcessError as e:
@@ -85,7 +87,6 @@ def home():
         if grep_output and not error:
             sentences = process_conllu(os.path.join(conllu_path, conllu_file))
             grep_output = json.loads(grep_output)
-            results = []
             for match in grep_output:
                 sentence = sentences[match["sent_id"]]
                 sent_id = match["sent_id"]
@@ -102,6 +103,9 @@ def home():
                 }
                 if not result_dict in results:
                     results.append(result_dict)
+        
+        if not error and not grep_output:
+            error = "No matches found for the given pattern."
 
     return render_template(
         'index.html', 
