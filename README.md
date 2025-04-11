@@ -1,9 +1,7 @@
-# eud-portugues
+# conllu-quick-search
 
 In order to launch the interface:
 
-`flask run`
+`cd flask && flask run`
 
-In order to use in command-line:
-
-`python3 app.py {conllu_path} {rules_path} {strategy}`
+Demo: [https://conllu-quick-search.souelvis.dev](https://conllu-quick-search.souelvis.dev)
