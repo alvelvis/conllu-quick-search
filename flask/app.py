@@ -58,7 +58,7 @@ def home():
 
         if not error:
             # Save the pattern to a file with a unique name
-            pattern = request.form.get("pattern").strip().replace("without {  }", "")
+            pattern = request.form.get("pattern").strip().replace("without{  }", "")
             unique_name = f"pattern_{int(time.time())}.req"
             patterns_dir = os.path.join(app_path, "patterns")
             if not os.path.exists(patterns_dir):
