@@ -94,7 +94,7 @@ def home():
                 sentence = sentences[match["sent_id"]]
                 sent_id = match["sent_id"]
                 node_numbers = match["matching"]["nodes"].values()
-                node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: item[1])])
+                node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: int(item[1].split(".")[0]))])
                 text = " ".join([("<b>%s</b>" % form) if token_id in node_numbers else form for token_id, form in sentence["tokens"].items()])
                 result_dict = {
                     "sent_id": sent_id,
