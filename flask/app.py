@@ -42,6 +42,7 @@ def home():
     pattern = request.form.get("pattern", "").strip().replace("without{  }", "")
     results = []
     grep_output = ""
+    highlight_labels = ""
 
     if request.method == "POST":
         uploaded_file = request.files.get("conllu_file")
@@ -87,13 +88,14 @@ def home():
             sentences = process_conllu(os.path.join(conllu_path, conllu_file))
             grep_output = json.loads(grep_output)
             matches = []
+            highlight_labels = request.form.get("highlight_labels", "").strip()
             for match in grep_output:
                 if match in matches:
                     continue
                 matches.append(match)
                 sentence = sentences[match["sent_id"]]
                 sent_id = match["sent_id"]
-                node_numbers = match["matching"]["nodes"].values()
+                node_numbers = [y for x, y in match["matching"]["nodes"].items() if x in highlight_labels.replace(" ", "").split(",") or not highlight_labels]
                 node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: int(item[1].split(".")[0]))])
                 text = " ".join([("<b>%s</b>" % form) if token_id in node_numbers else form for token_id, form in sentence["tokens"].items()])
                 result_dict = {
@@ -101,7 +103,6 @@ def home():
                     "sentence": sentence,
                     "encoded_conllu": urllib.parse.quote(sentence["conllu"]),
                     "node_text": node_text,
-                    "node_numbers": node_numbers,
                     "text": text.replace("<", "&lt;").replace(">", "&gt;").replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
                 }
                 if not result_dict in results:
@@ -117,6 +118,7 @@ def home():
         error=error,
         pattern=pattern,
         results=results,
+        highlight_labels=highlight_labels,
     )
 
 def process_conllu(conllu_path):

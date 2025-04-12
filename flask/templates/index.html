@@ -103,6 +103,10 @@
                     <label for="inputText">Pattern</label>
                     <textarea id="inputText" name="pattern" class="form-control" rows="10" placeholder="Enter your pattern here" spellcheck="false" required>{{ pattern if pattern else "pattern{\n\t\n}\nwithout{  }" }}</textarea>
                 </div>
+                <div class="form-group">
+                    <label for="highlight-labels">Highlight Labels (comma-separated):</label>
+                    <input type="text" id="highlight-labels" name="highlight_labels" class="form-control" placeholder="e.g., X,Y,PRED, or leave empty to highlight all labels" value="{{ highlight_labels if highlight_labels else '' }}" autocomplete="off">
+                </div>
             </div>
 
             <button id="annotate" class="btn btn-lg btn-success btn-block" type="submit">Search (Ctrl+Enter)</button>
