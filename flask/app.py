@@ -86,11 +86,15 @@ def home():
         if grep_output and not error:
             sentences = process_conllu(os.path.join(conllu_path, conllu_file))
             grep_output = json.loads(grep_output)
+            matches = []
             for match in grep_output:
+                if match in matches:
+                    continue
+                matches.append(match)
                 sentence = sentences[match["sent_id"]]
                 sent_id = match["sent_id"]
                 node_numbers = match["matching"]["nodes"].values()
-                node_text = " ".join([f"[{x}-{y}, {sentence['tokens'][y]}]" for x, y in match["matching"]["nodes"].items()])
+                node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: item[1])])
                 text = " ".join([("<b>%s</b>" % form) if token_id in node_numbers else form for token_id, form in sentence["tokens"].items()])
                 result_dict = {
                     "sent_id": sent_id,
