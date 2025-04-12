@@ -120,7 +120,8 @@ def home():
         selected_conllu=conllu_file,
         error=error,
         pattern=pattern,
-        results=results,
+        results=results[:200],
+        n_results=len(results),
         highlight_labels=highlight_labels,
     )
 

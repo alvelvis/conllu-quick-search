@@ -121,7 +121,12 @@
             {% elif results %}
             <hr>
             <div id="results-section">
-                <h2 class="h4 mb-3 font-weight-normal">Results in {{ selected_conllu }} ({{ results|length }})</h2>
+                <h2 class="h4 mb-3 font-weight-normal">
+                    Results in {{ selected_conllu }} ({{ n_results }})
+                    {% if n_results > 200 %}
+                        <span class="text-warning">- Displaying only the first 200 results</span>
+                    {% endif %}
+                </h2>
                 <div id="results-container">
                     {% for result in results %}
                         <div class="result-item mb-4">
