@@ -57,6 +57,9 @@ def home():
         else:
             conllu_file = request.form.get("conllu_file_selection")
 
+        if not os.path.exists(os.path.join(conllu_path, conllu_file)):
+            error = "The CoNLL-U file does not exist anymore. Please upload it again."
+
         if not error:
             # Save the pattern to a file with a unique name
             unique_name = f"pattern_{int(time.time())}.req"
