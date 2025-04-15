@@ -1,8 +1,7 @@
 from flask import Flask, render_template, request
 import glob
-import os, subprocess, sys
+import os, subprocess
 import json
-import requests
 import urllib
 import time
 
@@ -106,7 +105,8 @@ def home():
                     "sentence": sentence,
                     "encoded_conllu": urllib.parse.quote(sentence["conllu"]),
                     "node_text": node_text,
-                    "text": text.replace("<", "&lt;").replace(">", "&gt;").replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
+                    "text": text.replace("<", "&lt;").replace(">", "&gt;").replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"),
+                    "highlight": urllib.parse.quote(",".join([x + "\t" + sentence['tokens'][x] for x in node_numbers]))
                 }
                 if not result_dict in results:
                     results.append(result_dict)
