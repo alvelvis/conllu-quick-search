@@ -1,5 +1,7 @@
 const textarea = document.querySelector('#inputText')
 const highlightLabels = document.querySelector('#highlight-labels')
+const clusterBy = document.querySelector('#cluster-by')
+const maxResults = document.querySelector('#max-results')
 
 function handleKeydown(e, element) {
   if (e.keyCode === 9) {
@@ -13,3 +15,5 @@ function handleKeydown(e, element) {
 
 textarea.addEventListener('keydown', (e) => handleKeydown(e, textarea))
 highlightLabels.addEventListener('keydown', (e) => handleKeydown(e, highlightLabels))
+clusterBy.addEventListener('keydown', (e) => handleKeydown(e, clusterBy))
+maxResults.addEventListener('keydown', (e) => handleKeydown(e, maxResults))

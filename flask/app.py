@@ -39,9 +39,12 @@ def home():
     conllu_file = ""
     error = ""
     pattern = request.form.get("pattern", "").strip().replace("without{  }", "")
-    results = []
+    results = {}
     grep_output = ""
     highlight_labels = ""
+    max_results = 200
+    cluster_by = ""
+    n_results = 0
 
     if request.method == "POST":
         uploaded_file = request.files.get("conllu_file")
@@ -60,6 +63,7 @@ def home():
             error = "The CoNLL-U file does not exist anymore. Please upload it again."
 
         if not error:
+            cluster_by = request.form.get("cluster_by", "").strip()
             # Save the pattern to a file with a unique name
             unique_name = f"pattern_{int(time.time())}.req"
             patterns_dir = os.path.join(app_path, "patterns")
@@ -70,9 +74,13 @@ def home():
                 pattern_file.write(pattern)
 
             # Run the pattern matching script
+            command = ["grew", "grep", "-request", pattern_file_path, "-i", os.path.join(conllu_path, conllu_file)]
+            if cluster_by:
+                for cluster in cluster_by.split(","):
+                    command += ["-key", f'{cluster.strip()}']
             try:
                 result = subprocess.run(
-                    ["grew", "grep", "-request", pattern_file_path, "-i", os.path.join(conllu_path, conllu_file)],
+                    command,
                     capture_output=True,
                     text=True,
                     check=True,
@@ -89,27 +97,48 @@ def home():
         if grep_output and not error:
             sentences = process_conllu(os.path.join(conllu_path, conllu_file))
             grep_output = json.loads(grep_output)
+
+            def flatten_grep_output(data, parent_key=""):
+                if isinstance(data, dict):
+                    flattened = {}
+                    for k, v in data.items():
+                        new_key = f"{parent_key} - {k}".strip(" -")
+                        if isinstance(v, list):
+                            flattened[new_key] = v
+                        else:
+                            flattened.update(flatten_grep_output(v, new_key))
+                    return flattened
+                return {"results": data}
+
+            grep_output = flatten_grep_output(grep_output)
+
             matches = []
             highlight_labels = request.form.get("highlight_labels", "").strip()
-            for match in grep_output:
-                if match in matches:
-                    continue
-                matches.append(match)
-                sentence = sentences[match["sent_id"]]
-                sent_id = match["sent_id"]
-                node_numbers = [y for x, y in match["matching"]["nodes"].items() if x in highlight_labels.replace(" ", "").split(",") or not highlight_labels]
-                node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: int(item[1].split(".")[0]))])
-                text = " ".join([("<b>%s</b>" % form) if token_id in node_numbers else form for token_id, form in sentence["tokens"].items()])
-                result_dict = {
-                    "sent_id": sent_id,
-                    "sentence": sentence,
-                    "encoded_conllu": urllib.parse.quote(sentence["conllu"]),
-                    "node_text": node_text,
-                    "text": text.replace("<", "&lt;").replace(">", "&gt;").replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"),
-                    "highlight": urllib.parse.quote(",".join([x + "\t" + sentence['tokens'][x] for x in node_numbers]))
-                }
-                if not result_dict in results:
-                    results.append(result_dict)
+            max_results = request.form.get("max_results", 0)
+            max_results = int(max_results) if max_results.isdigit() else 0
+            for cluster in grep_output:
+                if not cluster in results:
+                    results[cluster] = []
+                for match in grep_output[cluster]:
+                    if match in matches:
+                        continue
+                    matches.append(match)
+                    sentence = sentences[match["sent_id"]]
+                    sent_id = match["sent_id"]
+                    node_numbers = [y for x, y in match["matching"]["nodes"].items() if x in highlight_labels.replace(" ", "").split(",") or not highlight_labels]
+                    node_text = " ".join([f"[{y}-{x}, {sentence['tokens'][y]}]" for x, y in sorted(match["matching"]["nodes"].items(), key=lambda item: int(item[1].split(".")[0]))])
+                    text = " ".join([("<b>%s</b>" % form) if token_id in node_numbers else form for token_id, form in sentence["tokens"].items()])
+                    result_dict = {
+                        "sent_id": sent_id,
+                        "sentence": sentence,
+                        "encoded_conllu": urllib.parse.quote(sentence["conllu"]),
+                        "node_text": node_text,
+                        "text": text.replace("<", "&lt;").replace(">", "&gt;").replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>"),
+                        "highlight": urllib.parse.quote(",".join([x + "\t" + sentence['tokens'][x] for x in node_numbers]))
+                    }
+                    if not result_dict in results[cluster]:
+                        n_results += 1
+                        results[cluster].append(result_dict)
         
         if not error and not grep_output:
             error = "No matches found for the given pattern."
@@ -120,8 +149,10 @@ def home():
         selected_conllu=conllu_file,
         error=error,
         pattern=pattern,
-        results=results[:200],
-        n_results=len(results),
+        results=sorted(results.items(), key=lambda x: len(x[1]), reverse=True),
+        max_results=max_results,
+        cluster_by=cluster_by,
+        n_results=n_results,
         highlight_labels=highlight_labels,
     )
 

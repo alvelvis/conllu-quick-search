@@ -57,8 +57,13 @@
                     if (detailsDiv) {
                         if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
                             detailsDiv.style.display = 'block';
-                            element.parentElement.style.backgroundColor = 'white';
-                            element.parentElement.style.padding = '20px';
+                            if (detailsDiv.classList.contains('cluster')) {
+                                element.parentElement.style.backgroundColor = '';
+                                element.parentElement.style.padding = '';
+                            } else {
+                                element.parentElement.style.backgroundColor = 'white';
+                                element.parentElement.style.padding = '20px';
+                            }
 
                             // Load iframe if not already loaded
                             const iframe = element.parentElement.querySelector('iframe');
@@ -103,9 +108,19 @@
                     <label for="inputText">Pattern</label>
                     <textarea id="inputText" name="pattern" class="form-control" rows="10" placeholder="Enter your pattern here" spellcheck="false" required>{{ pattern if pattern else "pattern{\n\t\n}\nwithout{  }" }}</textarea>
                 </div>
-                <div class="form-group">
-                    <label for="highlight-labels">Highlight Labels (comma-separated):</label>
-                    <input type="text" id="highlight-labels" name="highlight_labels" class="form-control" placeholder="e.g., X,Y,PRED, or leave empty to highlight all labels" value="{{ highlight_labels if highlight_labels else '' }}" autocomplete="off">
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="highlight-labels">Highlight Labels (comma-separated):</label>
+                        <input type="text" id="highlight-labels" name="highlight_labels" class="form-control" placeholder='e.g., "X, Y, PRED", leave empty to highlight all labels' value="{{ highlight_labels if highlight_labels else '' }}" autocomplete="off">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="max-results">Max Results (decrease for faster results):</label>
+                        <input type="number" id="max-results" name="max_results" class="form-control" placeholder="default: 200, 0 for all results" value="{{ max_results }}" min="0">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="cluster-by">Cluster By (comma-separated):</label>
+                        <input type="text" id="cluster-by" name="cluster_by" class="form-control" placeholder='e.g., "X.upos, {X << Y}"' value="{{ cluster_by if cluster_by else '' }}" autocomplete="off">
+                    </div>
                 </div>
             </div>
 
@@ -121,25 +136,32 @@
             {% elif results %}
             <hr>
             <div id="results-section">
-                <h2 class="h4 mb-3 font-weight-normal">
+                <h2 class="h3 mb-3 font-weight-bold">
                     Results in {{ selected_conllu }} ({{ n_results }})
-                    {% if n_results > 200 %}
-                        <span class="text-warning">- Displaying only the first 200 results</span>
+                    {% if max_results > 0 and n_results > max_results %}
+                        <span class="text-warning">- Displaying only the first {{max_results}} results</span>
                     {% endif %}
                 </h2>
                 <div id="results-container">
-                    {% for result in results %}
-                        <div class="result-item mb-4">
-                            <p onclick="toggleDetails(this)" style="cursor:pointer;">{{ loop.index }}. {{ result["sent_id"] }} - {{ result["text"]|safe }}</p>
-                            <div class="result-details" style='display: none; font-family: monospace;'>
-                                {{ result["node_text"] }}
-                                <div style="max-width:100%; overflow-y: hidden; overflow-x: hidden;" id="visualiser">
-                                    <iframe id="visualiser-{{ loop.index }}" data-src="https://souelvis.dev/enhanced-graph-visualiser/visualise.html?focus=true&text={{result['encoded_conllu']}}&highlight={{result['highlight']}}" style="margin-left: -30px; border:none; width:999999px; height:250px;"></iframe>
-                                </div>
-                                <pre>{{ result["sentence"]["conllu"] }}</pre>
+                    {% for key, key_results in results %}
+                        <div class="result-group mb-4">
+                            <h5 onclick="toggleDetails(this)" style="cursor:pointer; {% if key == 'results' %}display: none;{% endif %}">Cluster {{ loop.index }}: {{ key }} ({{ key_results|length }})</h5>
+                            <div class="result-details cluster" style="{% if key == 'results' %}display: block;{% else %}display: none;{% endif %}">
+                                {% for result in key_results[:max_results if max_results > 0 else None] %}
+                                    <div class="result-item mb-4">
+                                        <p onclick="toggleDetails(this)" style="cursor:pointer;">{{ loop.index }}. {{ result["sent_id"] }} - {{ result["text"]|safe }}</p>
+                                        <div class="result-details" style='display: none; font-family: monospace;'>
+                                            {{ result["node_text"] }}
+                                            <div style="max-width:100%; overflow-y: hidden; overflow-x: hidden;" id="visualiser">
+                                                <iframe id="visualiser-{{ loop.index }}" data-src="https://souelvis.dev/enhanced-graph-visualiser/visualise.html?focus=true&text={{result['encoded_conllu']}}&highlight={{result['highlight']}}" style="margin-left: -30px; border:none; width:999999px; height:250px;"></iframe>
+                                            </div>
+                                            <pre>{{ result["sentence"]["conllu"] }}</pre>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                {% endfor %}
                             </div>
                         </div>
-                        <hr>
                     {% endfor %}
                 </div>
             </div>
